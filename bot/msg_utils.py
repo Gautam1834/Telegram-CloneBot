@@ -1,6 +1,14 @@
 from bot import LOGGER
 from telegram.message import Message
 from telegram.update import Update
+from telegram import InlineKeyboardMarkup
+
+def sendMarkup(text: str, bot, update: Update, reply_markup: InlineKeyboardMarkup):
+    return bot.send_message(update.message.chat_id,
+                            reply_to_message_id=update.message.message_id,
+                            text=text, reply_markup=reply_markup, parse_mode='HTMl')
+
+
 
 def deleteMessage(bot, message: Message):
     try:
