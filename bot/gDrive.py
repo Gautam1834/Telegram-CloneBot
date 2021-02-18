@@ -20,6 +20,8 @@ from google.oauth2 import service_account
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from telegram import InlineKeyboardMarkup
+from bot import button_build
 from ssl import SSLError
 from googleapiclient.http import MediaFileUpload
 from tenacity import *
@@ -280,11 +282,12 @@ class GoogleDriveHelper:
                 LOGGER.error(err)
                 return err
             status.set_status(True)
-            msg += f'<a href="{self.__G_DRIVE_DIR_BASE_DOWNLOAD_URL.format(dir_id)}">{meta.get("name")}</a>' \
-                   f' ({get_readable_file_size(self.transferred_size)})'
+            msg += f'<b>Filename : </b><code>{meta.get("name")}</code>\n<b>Size : </b>{get_readable_file_size(self.transferred_size)}'
+            buttons = button_build.ButtonMaker()
+            buttons.buildbutton("⚡Drive Link⚡", self.__G_DRIVE_DIR_BASE_DOWNLOAD_URL.format(dir_id))
             if INDEX_URL:
                 url = requests.utils.requote_uri(f'{INDEX_URL}/{meta.get("name")}/')
-                msg += f' | <a href="{url}"> Index URL</a>'
+                buttons.buildbutton("💥Index Link💥", url)
         else:
             try:
                 file = self.check_file_exists(meta, self.gparentid, self.__service)
@@ -301,15 +304,15 @@ class GoogleDriveHelper:
                     err = str(e).replace('>', '').replace('<', '')
                 LOGGER.error(err)
                 return err
-            msg += f'<a href="{self.__G_DRIVE_BASE_DOWNLOAD_URL.format(file.get("id"))}">{file.get("name")}</a>'
+            msg += f'<b>Filename : </b><code>{meta.get("name")}</code>'
             try:
-                msg += f' ({get_readable_file_size(int(meta.get("size")))}) '
+                msg += f'\n<b>Size : </b><code>{get_readable_file_size(int(meta.get("size")))}</code>'
                 if INDEX_URL:
                     url = requests.utils.requote_uri(f'{INDEX_URL}/{file.get("name")}')
-                    msg += f' | <a href="{url}"> Index URL</a>'
+                    buttons.buildbutton("💥Index Link💥", url)
             except TypeError:
                 pass
-        return msg
+        return msg, InlineKeyboardMarkup(buttons.build_menu(2))
 
     @retry(wait=wait_exponential(multiplier=2, min=3, max=6), stop=stop_after_attempt(15),
            retry=retry_if_exception_type(HttpError) | retry_if_exception_type(SSLError), before=before_log(LOGGER, logging.DEBUG))
@@ -529,3 +532,4 @@ def get_readable_file_size(size_in_bytes) -> str:
         return f'{round(size_in_bytes, 2)}{SIZE_UNITS[index]}'
     except IndexError:
         return 'File too large'
+h
