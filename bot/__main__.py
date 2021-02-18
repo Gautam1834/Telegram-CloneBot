@@ -6,7 +6,7 @@ from bot.config import BOT_TOKEN, OWNER_ID, GDRIVE_FOLDER_ID
 from bot.decorators import is_authorised, is_owner
 from telegram.error import TimedOut, BadRequest
 from bot.clone_status import CloneStatus
-from bot.msg_utils import deleteMessage, sendMessage
+from bot.msg_utils import deleteMessage, sendMessage, sendMarkup
 import time
 
 REPO_LINK = "https://github.com/jagrit007/Telegram-CloneBot"
@@ -57,10 +57,10 @@ def cloneNode(update,context):
         CLONE_DICT[folder_id] = status_class
         status_class.folderID = folder_id
         sendCloneStatus(update, context, status_class, msg, link)
-        result = gd.clone(link, status_class, ignoreList=ignoreList)
+        result, button = gd.clone(link, status_class, ignoreList=ignoreList)
         deleteMessage(context.bot, msg)
         status_class.set_status(True)
-        sendMessage(result, context.bot, update)
+        sendMarkup(result,context.bot,update,button)
     else:
         sendMessage("Please Provide a Google Drive Shared Link to Clone.", bot, update)
 
@@ -74,7 +74,7 @@ def sendCloneStatus(update, context, status, msg, link):
             text=f'🔗 *Cloning:* [{status.MainFolderName}]({status.MainFolderLink})\n━━━━━━━━━━━━━━\n🗃️ *Current File:* `{status.get_name()}`\n⬆️ *Transferred*: `{status.get_size()}`\n📁 *Destination:* [{status.DestinationFolderName}]({status.DestinationFolderLink})'
             if status.checkFileStatus():
                 text += f"\n🕒 *Checking Existing Files:* `{str(status.checkFileStatus())}`"
-            text += f"\n❌ /`cancel {status.folderID}`"
+            text += f"\n❌ `/cancel {status.folderID}`"
             if not text == old_text:
                 msg.edit_text(text=text, parse_mode="Markdown", timeout=200)
                 old_text = text
